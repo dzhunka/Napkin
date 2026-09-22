@@ -12,7 +12,7 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 // Hosts cache UI resources by URI. Bump this whenever you ship a widget change.
-const UI_VERSION = "2";
+const UI_VERSION = "3";
 const RESOURCE_URI = `ui://napkin/index.html?v=${UI_VERSION}`;
 
 // ---------------------------------------------------------------------------

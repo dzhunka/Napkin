@@ -301,3 +301,45 @@ started with and only rescales.
 - Evidence that people want to keep drawing after rotating a phone, which would
   mean reprojecting the sketch into a new buffer rather than holding the
   orientation still.
+
+### Amendment — the reported ceiling is the container we were given
+
+**Date:** 2026-09-22
+
+Shipped, the napkin shrank. Not once: continuously, a pixel or two per frame,
+until it reached the smallest square we allow. The measurement above was right
+about where to find the frame and wrong about what the number means.
+
+```js
+// ChatGPT.app/Contents/Resources/app.asar, minified
+function p4o(e, t, n) { return { maxHeight: e.clientHeight, maxWidth: e.clientWidth }; }
+```
+
+Codex measures the container the widget is already in. That container was
+sized from the last `size-changed`, so the "maximum height" a widget reads is
+the height it last asked for. Subtract the Send button from it, fit paper in
+what is left, ask for that, and the next report is smaller by exactly the
+button. It is a loop with a fixed point at nothing.
+
+Only the figure that arrives with `ui/initialize` is innocent, because it
+predates the first request.
+
+**The ceiling is now discovered rather than read.** The napkin asks for the
+size the paper wants, and if the host cannot give it, the host says so in the
+only way that cannot be misread: our own document ends up taller than its
+viewport. The height we were granted at that point is the ceiling.
+
+Two details make that reliable. The check waits 200ms, because a napkin that
+has just grown always overflows for a moment — the host cannot resize the
+iframe until after it has been told, and a transient overflow read as a refusal
+is the same runaway in a different costume. And the host's own figure is still
+taken at connect and thereafter only when it *exceeds* what we believe we have,
+since a report of our own height is not news about the room.
+
+The napkin can therefore be left smaller than it could be — if a host's ceiling
+grows without the frame's width changing, nothing tells us. It cannot overflow,
+and it cannot shrink itself, which are the two failures worth preventing.
+
+The preview harness now reports its container the way Codex does: the height it
+just granted, not the ceiling it would allow. Reporting the ceiling made the
+harness a kinder host than any that exists, and it is why this shipped.

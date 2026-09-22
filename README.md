@@ -121,9 +121,15 @@ scripts/capture-seed-thread.mjs captures one of your threads as a seed fixture
 The paper is a golden rectangle — 1024×633 lying down, 633×1024 standing up —
 and which way round it lies comes from the host: landscape on a desktop,
 portrait on a phone unless the phone is turned on its side. Its size on screen
-is chosen against the frame the host reports rather than against the widget's
-own width, so the napkin fills the card without ever asking for more height
-than the card has. See [DECISIONS 003](./DECISIONS.md).
+is chosen against the host's frame rather than against the widget's own width,
+so the napkin fills the card without asking for more height than the card has.
+
+How much height there is cannot simply be read: Codex answers that question by
+measuring the container the widget is already in, which is the size the widget
+last asked for, and a napkin that believes it shrinks itself away. So the
+ceiling is discovered instead — ask for the size the paper wants, and let the
+host refuse by clamping, which shows up here as a document taller than its own
+viewport. See [DECISIONS 003](./DECISIONS.md).
 
 The pixel buffer is fixed per orientation while CSS decides the rendered size.
 Two reasons: resizing a canvas clears it, so pinning the buffer keeps a layout

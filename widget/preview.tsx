@@ -48,11 +48,24 @@ const THEMES: Theme[] = ["system", "light", "dark"];
 
 const PROTOCOL_VERSION = "2026-01-26";
 
-function hostContext(frame: Frame, theme: Resolved) {
+/**
+ * `granted`, not `frame.maxHeight`, because that is what Codex reports:
+ *
+ * ```js
+ * // ChatGPT.app/Contents/Resources/app.asar, minified
+ * function p4o(e, t, n) { return { maxHeight: e.clientHeight, maxWidth: e.clientWidth }; }
+ * ```
+ *
+ * The number a widget is given back is the container it was just granted —
+ * which is the size it asked for. Reporting the real ceiling here instead
+ * would be a kinder host than any that exists, and would hide every bug that
+ * comes of reading one's own height as a limit.
+ */
+function hostContext(frame: Frame, granted: number, theme: Resolved) {
   return {
     displayMode: "inline",
     availableDisplayModes: ["inline"],
-    containerDimensions: { width: frame.width, maxHeight: frame.maxHeight },
+    containerDimensions: { width: frame.width, maxHeight: granted },
     platform: frame.platform,
     deviceCapabilities:
       frame.platform === "mobile"
@@ -173,7 +186,7 @@ function Harness() {
             protocolVersion: PROTOCOL_VERSION,
             hostInfo: { name: "napkin-preview", version: "0.1.0" },
             hostCapabilities: { message: { text: {}, image: {} } },
-            hostContext: hostContext(frame, resolved),
+            hostContext: hostContext(frame, frame.maxHeight, resolved),
           });
           break;
 
@@ -204,15 +217,16 @@ function Harness() {
     return () => window.removeEventListener("message", onMessage);
   }, [frame, post, resolved]);
 
-  // Changing frame or theme is the host resizing its card, which a real host
-  // tells the widget about rather than reloading it over.
+  // Every resize is a context change, the widget's own included: the host has
+  // no way to describe its card except by measuring it, and by then the card
+  // is whatever the widget last asked for.
   useEffect(() => {
     post({
       jsonrpc: "2.0",
       method: "ui/notifications/host-context-changed",
-      params: hostContext(frame, resolved),
+      params: hostContext(frame, height, resolved),
     });
-  }, [frame, post, resolved]);
+  }, [frame, height, post, resolved]);
 
   useEffect(() => {
     const iframe = frameRef.current;
