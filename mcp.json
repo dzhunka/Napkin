@@ -3,7 +3,7 @@
   "mcpServers": {
     "napkin": {
       "type": "streamable-http",
-      "url": "https://replace-me.example.com/mcp"
+      "url": "https://napkin-ayyavazh.vercel.app/mcp"
     }
   }
 }
