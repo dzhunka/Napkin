@@ -1,9 +1,0 @@
-{
-  "threadId": "01a07f3c-5b91-7d24-9f68-3ac41b0d72e5",
-  "threadName": "Greeting app dev loop",
-  "userMessage": "I'm Ada, and I'm iterating on this plugin's greeting app.",
-  "description": "Context is already set, so \"greet me\" opens the widget on the first turn.",
-  "cwdPlaceholder": "__CWD__",
-  "codexHomePlaceholder": "__CODEX_HOME__",
-  "homePlaceholder": "__HOME__"
-}

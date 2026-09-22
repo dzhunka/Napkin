@@ -13,24 +13,7 @@ export const runtime = "nodejs";
 
 // Hosts cache UI resources by URI. Bump this whenever you ship a widget change.
 const UI_VERSION = "1";
-const RESOURCE_URI = `ui://app/index.html?v=${UI_VERSION}`;
-
-// ---------------------------------------------------------------------------
-// Demo domain logic — replace this with your plugin's actual behaviour.
-// ---------------------------------------------------------------------------
-const TONES = ["plain", "formal", "enthusiastic"] as const;
-type Tone = (typeof TONES)[number];
-
-function greetingFor(name: string, tone: Tone): string {
-  switch (tone) {
-    case "formal":
-      return `Good day, ${name}.`;
-    case "enthusiastic":
-      return `HEY ${name.toUpperCase()}!`;
-    default:
-      return `Hello, ${name}!`;
-  }
-}
+const RESOURCE_URI = `ui://napkin/index.html?v=${UI_VERSION}`;
 
 // ---------------------------------------------------------------------------
 // The widget is a Vite bundle inlined into one HTML file (see vite.config.ts).
@@ -64,47 +47,44 @@ const handler = createMcpHandler(
       ],
     }));
 
-    // Model-facing entry point. The host renders the widget next to the result.
+    // The only tool. Opening the napkin is all the server does — the sketch
+    // itself never comes back through here. The widget hands the PNG straight to
+    // the host as a user message, so there is no upload endpoint and no state to
+    // keep between the tool call and the drawing.
     registerAppTool(
       server,
-      "greet",
+      "open_napkin",
       {
-        title: "Greet",
-        description: "Greet someone and open the greeting widget.",
+        title: "Open a napkin",
+        description:
+          "Open a blank napkin for the user to sketch on. Their drawing arrives " +
+          "as an image in their next message. Use when a rough sketch would " +
+          "convey more than a description — layout, shape, arrangement, or a " +
+          "visual direction the user is struggling to put into words.",
         inputSchema: z.object({
-          name: z.string().describe("Name of the person to greet"),
+          brief: z
+            .string()
+            .optional()
+            .describe(
+              "What the sketch is for, shown on the napkin as a reminder. " +
+                "For example: 'rough logo direction'.",
+            ),
         }),
         annotations: { readOnlyHint: true, openWorldHint: false },
         _meta: { ui: { resourceUri: RESOURCE_URI } },
       },
-      async ({ name }) => {
-        const greeting = greetingFor(name, "plain");
-        return {
-          content: [{ type: "text", text: greeting }],
-          structuredContent: { name, tone: "plain", greeting },
-        };
-      },
-    );
-
-    // `visibility: ["app"]` keeps this out of the model's tool list — it exists
-    // only so the widget can call back into the server from a user interaction.
-    registerAppTool(
-      server,
-      "set_tone",
-      {
-        title: "Set tone",
-        description: "Re-render the greeting in a different tone.",
-        inputSchema: z.object({ name: z.string(), tone: z.enum(TONES) }),
-        annotations: { readOnlyHint: true, openWorldHint: false },
-        _meta: { ui: { resourceUri: RESOURCE_URI, visibility: ["app"] } },
-      },
-      async ({ name, tone }) => {
-        const greeting = greetingFor(name, tone);
-        return {
-          content: [{ type: "text", text: greeting }],
-          structuredContent: { name, tone, greeting },
-        };
-      },
+      async ({ brief }) => ({
+        content: [
+          {
+            type: "text",
+            text:
+              "A blank napkin is open. Stop here and wait — the sketch will " +
+              "arrive as an image in the user's next message. Do not guess what " +
+              "they are drawing.",
+          },
+        ],
+        structuredContent: { brief: brief ?? null },
+      }),
     );
   },
   {

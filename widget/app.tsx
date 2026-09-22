@@ -1,139 +1,165 @@
-import { useState } from "react";
-import { useMcpApp } from "./use-mcp-app";
+import { useEffect, useRef, useState } from "react";
+import { imageRoute, sendImage, useMcpApp } from "./use-mcp-app";
 
-const TONES = ["plain", "formal", "enthusiastic"] as const;
+// The backing store is a fixed square while CSS decides the rendered size. The
+// host controls the widget's width, and resizing a canvas clears it, so pinning
+// the pixel buffer keeps a drawing from being wiped by a layout change and makes
+// every napkin submit at the same resolution.
+const NAPKIN_SIZE = 1024;
+const PAPER = "#fafaf9";
+const INK = "#1c1917";
+// Deliberately bolder than a pen would be at this resolution: models downscale
+// images before reading them, and a hairline stroke does not survive that.
+const NIB = 8;
 
-type View = "main" | "about";
+type Status = "drawing" | "sending" | "sent";
 
 export function Widget() {
-  // Views live inside the bundle. The host renders this HTML in a sandboxed
-  // iframe under its own origin, so there is no server to navigate to.
-  const [view, setView] = useState<View>("main");
+  const { connected, toolInput, hostCapabilities } = useMcpApp();
 
-  return (
-    <div className="min-h-screen bg-zinc-50 font-sans dark:bg-zinc-950">
-      <main className="mx-auto flex w-full max-w-xl flex-col gap-8 px-8 py-12">
-        {view === "main" ? <MainView onNavigate={setView} /> : <AboutView onNavigate={setView} />}
-      </main>
-    </div>
-  );
-}
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const inkRef = useRef<CanvasRenderingContext2D | null>(null);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
-function MainView({ onNavigate }: { onNavigate: (view: View) => void }) {
-  const { connected, toolInput, toolResult, callTool } = useMcpApp();
-  const [pending, setPending] = useState<string | null>(null);
+  const [hasInk, setHasInk] = useState(false);
+  const [status, setStatus] = useState<Status>("drawing");
   const [error, setError] = useState<string | null>(null);
 
-  const state = (toolResult ?? toolInput) as {
-    name?: string;
-    tone?: string;
-    greeting?: string;
-  } | null;
+  const brief = typeof toolInput?.brief === "string" ? toolInput.brief : null;
+  const route = imageRoute(hostCapabilities);
+  const canSubmit = hasInk && status === "drawing" && connected && route !== null;
 
-  async function onPickTone(tone: string) {
-    if (!state?.name) return;
-    setPending(tone);
+  useEffect(() => {
+    const context = canvasRef.current?.getContext("2d");
+    if (!context) return;
+
+    // Paint the paper instead of leaving the canvas transparent — a transparent
+    // PNG composited onto a dark background hides the ink completely.
+    context.fillStyle = PAPER;
+    context.fillRect(0, 0, NAPKIN_SIZE, NAPKIN_SIZE);
+
+    context.strokeStyle = INK;
+    context.fillStyle = INK;
+    context.lineWidth = NIB;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    inkRef.current = context;
+  }, []);
+
+  function pointFrom(event: React.PointerEvent<HTMLCanvasElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    return {
+      x: ((event.clientX - bounds.left) / bounds.width) * NAPKIN_SIZE,
+      y: ((event.clientY - bounds.top) / bounds.height) * NAPKIN_SIZE,
+    };
+  }
+
+  function onPointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+    const context = inkRef.current;
+    if (!context || status !== "drawing") return;
+
+    // Capture so a stroke that leaves the napkin keeps drawing until release.
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const point = pointFrom(event);
+    lastPointRef.current = point;
+
+    // A tap without movement should still leave a mark.
+    context.beginPath();
+    context.arc(point.x, point.y, NIB / 2, 0, Math.PI * 2);
+    context.fill();
+    setHasInk(true);
+  }
+
+  function onPointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+    const context = inkRef.current;
+    const from = lastPointRef.current;
+    if (!context || !from) return;
+
+    const to = pointFrom(event);
+    context.beginPath();
+    context.moveTo(from.x, from.y);
+    context.lineTo(to.x, to.y);
+    context.stroke();
+    lastPointRef.current = to;
+  }
+
+  function onPointerUp() {
+    lastPointRef.current = null;
+  }
+
+  async function onSubmit() {
+    const canvas = canvasRef.current;
+    if (!canvas || !canSubmit) return;
+
+    setStatus("sending");
     setError(null);
     try {
-      await callTool("set_tone", { name: state.name, tone });
+      const dataUrl = canvas.toDataURL("image/png");
+      await sendImage(
+        dataUrl.slice(dataUrl.indexOf(",") + 1),
+        brief
+          ? `Here is my napkin sketch for: ${brief}`
+          : "Here is my napkin sketch.",
+      );
+      setStatus("sent");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setPending(null);
+      setStatus("drawing");
     }
   }
 
   return (
-    <>
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-          MCP App boilerplate
-        </h1>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          This is the widget MCP hosts render in a sandboxed iframe next to a
-          tool result. It ships as one self-contained HTML file.
-        </p>
-      </header>
+    <div className="min-h-screen bg-zinc-100 font-sans dark:bg-zinc-950">
+      <main className="mx-auto flex w-full max-w-lg flex-col gap-4 px-6 py-8">
+        <header className="flex flex-col gap-1">
+          <h1 className="text-sm font-medium tracking-tight text-zinc-900 dark:text-zinc-100">
+            Napkin
+          </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {brief ?? "Sketch something rough, then send it."}
+          </p>
+        </header>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-          Widget state
-        </p>
-        <p className="mt-2 text-2xl text-zinc-900 dark:text-zinc-100">
-          {state?.greeting ?? "Call the greet tool to populate this."}
-        </p>
+        <canvas
+          ref={canvasRef}
+          width={NAPKIN_SIZE}
+          height={NAPKIN_SIZE}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          // `touch-none` keeps a finger or pencil stroke from scrolling the host
+          // instead of drawing.
+          className="aspect-square w-full touch-none rounded-sm bg-[#fafaf9] shadow-sm ring-1 ring-zinc-900/10 dark:ring-white/10"
+          style={{ cursor: status === "drawing" ? "crosshair" : "default" }}
+        />
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {TONES.map((tone) => (
-            <button
-              key={tone}
-              onClick={() => onPickTone(tone)}
-              disabled={!connected || !state?.name || pending !== null}
-              className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-900 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
-            >
-              {pending === tone ? `${tone}…` : tone}
-            </button>
-          ))}
-        </div>
+        <footer className="flex items-center justify-between gap-4">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            {status === "sent"
+              ? "Sent to the conversation."
+              : !connected
+                ? "Open this through an MCP host to send a sketch."
+                : route === null
+                  ? "This host does not accept images from apps."
+                  : hasInk
+                    ? "Ready to send."
+                    : "Draw on the napkin to begin."}
+          </p>
+
+          <button
+            onClick={onSubmit}
+            disabled={!canSubmit}
+            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          >
+            {status === "sending" ? "Sending…" : status === "sent" ? "Sent" : "Send"}
+          </button>
+        </footer>
 
         {error && (
-          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
         )}
-      </section>
-
-      <nav className="flex flex-col gap-3">
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-          Navigation inside the iframe
-        </p>
-        <button
-          onClick={() => onNavigate("about")}
-          className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-        >
-          About &rarr;
-        </button>
-      </nav>
-
-      <footer className="flex flex-col gap-1 text-xs text-zinc-400 dark:text-zinc-500">
-        <p>
-          MCP endpoint: <code>/mcp</code>
-        </p>
-        <p>
-          {connected
-            ? "Connected to MCP host"
-            : "Not connected — open this through an MCP host to connect"}
-        </p>
-      </footer>
-    </>
-  );
-}
-
-function AboutView({ onNavigate }: { onNavigate: (view: View) => void }) {
-  return (
-    <>
-      <button
-        onClick={() => onNavigate("main")}
-        className="self-start text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-      >
-        &larr; Back
-      </button>
-
-      <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-        About
-      </h1>
-
-      <div className="flex flex-col gap-4 text-zinc-600 dark:text-zinc-400">
-        <p>
-          This view exists to show that moving between screens keeps working
-          inside a host&apos;s sandboxed iframe, which is the part most likely to
-          break when a widget grows beyond a single screen.
-        </p>
-        <p>
-          Because the bundle is self-contained, switching views fetches nothing.
-          The <code className="text-zinc-800 dark:text-zinc-200">useMcpApp</code>{" "}
-          hook keeps one bridge to the host alive for the whole session, so the
-          tool result is still there when you come back.
-        </p>
-      </div>
-    </>
+      </main>
+    </div>
   );
 }

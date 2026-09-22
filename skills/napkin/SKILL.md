@@ -1,45 +1,62 @@
 ---
 name: napkin
-description: Greets a person and opens an interactive greeting widget in the host UI. Use when the user asks to greet someone by name, or asks to change the tone of a greeting. Replace this skill with guidance for your own MCP App's tools.
+description: Opens a blank napkin the user can sketch on, and their drawing comes back as an image. Use when the user is describing something visual and struggling to put it into words — a logo direction, a layout, a shape, how pieces are arranged on screen — or when they offer to draw it, say it would be easier to show you, or mention sketching, drawing, or a diagram.
 license: MIT
 ---
 
-# MCP App boilerplate
+# Napkin
 
-This skill tells the agent when to reach for the tools exposed by the
-`napkin` MCP server, and how to talk about the widget the host
-renders.
+`napkin` hands the user a blank napkin and a pen. They sketch, press Send, and the
+drawing arrives as an image attached to their next message.
 
-## Tools
+It exists for directions too rough or too spatial to write down. A sketch of a
+logo takes five seconds and says more than a paragraph of adjectives.
 
-- `greet({ name })` — returns a greeting and opens the widget. This is the
-  entry point; call it whenever the user wants to greet someone.
-- `set_tone({ name, tone })` — not available to you. It is registered with
-  `visibility: ["app"]` so only the widget itself can call it, when the user
-  clicks a tone button.
+## The one tool
 
-## How to use
+`open_napkin({ brief? })` opens the napkin. `brief` is a short reminder shown on
+it — "rough logo direction", "where the panels go" — so pass it when the napkin
+is for something specific.
 
-1. Call `greet` with the person's name. The tool returns the greeting as text
-   and the host renders the widget next to it.
-2. Describe the greeting in your reply, but do not re-render it as a table or
-   restate the widget's contents at length — the user can see the widget.
-3. If the user asks for a different tone, call `greet` again rather than
-   `set_tone`, and mention that they can also switch tone in the widget.
+There is no tool for reading the sketch. The drawing does not come back through
+the server; the widget hands it to the host, and it reaches you the same way any
+image the user attaches does.
+
+## How to use it
+
+1. Call `open_napkin`, with a `brief` when you know what the sketch is for.
+2. **Stop.** Say something short, like that the napkin is open. Then wait.
+3. The sketch arrives as an image in the user's next message. Read it and carry
+   on with the work it was for.
+
+Step 2 is the part worth getting right. Nothing useful exists yet at that point,
+so do not describe a drawing you have not seen, guess at what they will draw, or
+start the task the sketch is supposed to inform. Do not call `open_napkin` again
+while a napkin is already open and unsent.
+
+## When to offer it
+
+Reach for it when words are doing badly:
+
+- The user is circling a visual idea — "something like a mountain but rounder".
+- The answer is spatial: a layout, an arrangement, a flow between boxes.
+- They say it would be easier to show you, or ask whether they can draw it.
+
+It is not a diagramming tool. The napkin has a pen and nothing else — no eraser,
+no undo, no colours, no shapes. It is for the rough version. If the user wants
+something precise or wants to revise a detail, a real tool is a better answer,
+and if they want to change their sketch, open a fresh napkin.
+
+## Reading what arrives
+
+Treat the sketch as direction, not specification. Lines are approximate and
+proportions are accidental. Take the intent — the shape, the arrangement, the
+gesture — and ask about anything load-bearing you cannot make out, rather than
+inventing a detail or reading precision into a wobbly line.
 
 ## When the host has no UI
 
-Hosts that do not support the MCP Apps extension still receive the text
-content from `greet`, so the tool remains useful without the widget. Do not
-tell the user a widget appeared unless you know the host renders one.
-
-## Adapting this skill
-
-When you replace the boilerplate's `greet`/`set_tone` tools with your own:
-
-- Rename this directory and the `name` field to match your plugin.
-- Rewrite `description` so it names the concrete triggers that should activate
-  the skill — that text is the only thing the agent sees before loading this
-  file.
-- Keep the distinction between model-visible tools and `visibility: ["app"]`
-  tools explicit, since agents otherwise try to call widget-only tools.
+The napkin needs a host that renders MCP Apps and accepts images from them.
+Where that is missing, the widget says so and Send stays disabled, so the sketch
+will never arrive. Do not tell the user a napkin opened unless you know the host
+renders one — ask them to describe or attach the image instead.

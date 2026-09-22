@@ -15,7 +15,7 @@ const base = (process.argv[2] ?? "http://localhost:3000").replace(/\/$/, "");
 const url = new URL(`${base}/mcp`);
 
 const client = new Client(
-  { name: "boilerplate-smoke-test", version: "0.1.0" },
+  { name: "napkin-smoke-test", version: "0.1.0" },
   { capabilities: { extensions: { [EXTENSION_ID]: { mimeTypes: [RESOURCE_MIME_TYPE] } } } },
 );
 
@@ -38,29 +38,39 @@ check(
   `extensions=${JSON.stringify(caps.extensions)}`,
 );
 
-// 2. Tools list: `greet` is model-visible, `set_tone` is app-only.
+// 2. Tools list: `open_napkin` is the whole model-facing surface.
 const { tools } = await client.listTools();
 const names = tools.map((t) => t.name);
 console.log("\nTools:", names.join(", "));
-const greet = tools.find((t) => t.name === "greet");
-check("greet tool is listed", Boolean(greet));
+const open = tools.find((t) => t.name === "open_napkin");
+check("open_napkin tool is listed", Boolean(open));
+check("open_napkin is the only tool", names.length === 1, `tools=${names.join(", ")}`);
 check(
-  "greet points at a ui:// resource",
-  greet?._meta?.ui?.resourceUri?.startsWith("ui://"),
-  `resourceUri=${greet?._meta?.ui?.resourceUri}`,
+  "open_napkin points at a ui:// resource",
+  open?._meta?.ui?.resourceUri?.startsWith("ui://"),
+  `resourceUri=${open?._meta?.ui?.resourceUri}`,
 );
 
-// 3. Calling the tool returns text plus structured widget state.
-const result = await client.callTool({ name: "greet", arguments: { name: "Ada" } });
-console.log("\ngreet result:", JSON.stringify(result.structuredContent));
+// 3. Opening a napkin returns the brief as widget state, and tells the model to
+// wait rather than narrate a drawing that does not exist yet.
+const brief = "rough logo direction";
+const result = await client.callTool({
+  name: "open_napkin",
+  arguments: { brief },
+});
+console.log("\nopen_napkin result:", JSON.stringify(result.structuredContent));
 check(
-  "greet returns text content",
-  result.content?.some((c) => c.type === "text" && c.text.includes("Ada")),
+  "open_napkin tells the model to wait",
+  result.content?.some((c) => c.type === "text" && /wait/i.test(c.text)),
 );
-check("greet returns structuredContent", Boolean(result.structuredContent?.greeting));
+check(
+  "open_napkin passes the brief to the widget",
+  result.structuredContent?.brief === brief,
+  `brief=${result.structuredContent?.brief}`,
+);
 
 // 4. The referenced UI resource must be readable and be real HTML.
-const resourceUri = greet?._meta?.ui?.resourceUri;
+const resourceUri = open?._meta?.ui?.resourceUri;
 const read = await client.readResource({ uri: resourceUri });
 const html = read.contents?.[0]?.text ?? "";
 check(
@@ -81,16 +91,11 @@ check(
   external.length ? `external refs: ${external.slice(0, 3).join(", ")}` : undefined,
 );
 
-// 5. The app-only tool works when called directly (as the widget does).
-const toned = await client.callTool({
-  name: "set_tone",
-  arguments: { name: "Ada", tone: "enthusiastic" },
-});
-check(
-  "set_tone changes the greeting",
-  toned.structuredContent?.greeting === "HEY ADA!",
-  `greeting=${toned.structuredContent?.greeting}`,
-);
+// 5. The napkin is only useful if the bundle carries something to draw on and a
+// way to export it, which a stale or half-built bundle would silently drop.
+// Matched as a quoted token, since Tailwind's reset also names `canvas`.
+check("UI resource renders a canvas", /(["'`])canvas\1/.test(html));
+check("UI resource exports the drawing as a PNG", /toDataURL/.test(html));
 
 console.log("");
 for (const p of pass) console.log(`  PASS  ${p}`);

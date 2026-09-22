@@ -104,3 +104,104 @@ Any of the following would be worth re-measuring:
   cannot be satisfied through the host bridge.
 - Bundle size growing large enough that shipping it on every resource fetch
   costs more than a chunked load would.
+
+## 002 — Return the sketch through `ui/message`, not through a tool
+
+**Date:** 2026-09-22
+**Status:** Accepted
+**Measured against:** the shipped Codex desktop host bundle (`/Applications/ChatGPT.app`),
+`@modelcontextprotocol/ext-apps` 2.0.0
+
+### Context
+
+Napkin's whole purpose is getting a drawing from the widget into the model's
+hands. The drawing originates in the widget, but the model is on the other side
+of the host, and an MCP App has several ways to push something across.
+
+**Through a tool.** The widget calls an app-visible tool — `submit_sketch({ png })`
+— and the tool returns the image as content. This is the shape the boilerplate
+demonstrates with `set_tone`, and the obvious first instinct.
+
+**Through the host as a user message.** The widget calls `ui/message` with an
+image content block, and the host adds it to the thread as though the user had
+attached the file themselves.
+
+**Through model context.** The widget calls `ui/update-model-context` with the
+image, which the host holds and attaches to the next turn.
+
+### What we measured
+
+The tool route has a hole in it that is easy to miss: the result of a tool the
+*widget* invoked is returned to the widget. Nothing in the MCP Apps spec obliges
+a host to also put that result in front of the model, and a sketch the model
+never sees is useless. Making it work anyway would mean storing the PNG server
+side and telling the model to come back for it — which needs shared storage,
+because this deploys to serverless functions where no two requests are
+guaranteed the same instance. That is a database for something the host already
+knows how to carry.
+
+The host bundle settles it. Codex declares, for views where app messages are
+enabled:
+
+```js
+// /Applications/ChatGPT.app/Contents/Resources/app.asar, minified
+hostCapabilities: {
+  /* ... */
+  message: A ? { text: {}, image: {}, resourceLink: {} } : {},
+  updateModelContext: { image: {}, /* ... */ },
+}
+```
+
+and handles the request by unpacking the content blocks into the composer:
+
+```js
+case `ui/message`: {
+  let { text: n, imageUrls: i } = j0o(c);
+  return await Cn({ source: `mcp_app`, sourceId: m, text: n, imageUrls: i },
+    n || ce.formatMessage({ id: `codex.mcpApp.imageMessage`,
+      defaultMessage: `Shared an image from {appName}` }));
+}
+```
+
+That fallback string is localised into every language the app ships, and its
+description reads "Message shown in the conversation when an MCP app sends an
+image without text". An image arriving from a widget with no accompanying text
+is not an edge case someone tolerated; it is a case someone designed for.
+
+### Decision
+
+Submit the sketch with `sendMessage`, carrying a text block and a PNG image
+block, and keep no server-side state at all. `open_napkin` opens the napkin and
+returns; the image never touches our deployment.
+
+Route by the host's declared capabilities rather than assuming this one. Where a
+host takes images in `updateModelContext` but not in `message`, park the image
+there and send a short text message as the trigger, because a context update
+deliberately does not start a turn. Where a host declares neither, the widget
+says so and disables Send instead of dropping a drawing on the floor.
+
+### Consequences
+
+The server stays stateless, which is why there is one tool and no storage,
+no upload route, and no expiry to reason about. The sketch arrives in the thread
+the same way a photographed napkin used to, so nothing downstream needs to learn
+a new shape.
+
+The cost is that submitting depends on a host capability rather than on the tool
+call that every MCP host supports. On a host that renders widgets but refuses
+images from them, Napkin can draw and cannot send — the one failure we chose to
+surface in the UI rather than work around.
+
+Because the image becomes a user message, the user sees it in their own
+transcript, and the turn starts whether or not the model asked for it. That is
+the intent, but it does mean the widget must not send without an explicit
+press.
+
+### What would reopen this
+
+- A host we care about declaring `message` without `image`, making the
+  `updateModelContext` fallback the common path rather than the spare one.
+- Hosts surfacing app-initiated tool results to the model as a specified
+  guarantee, which would make the tool route viable and host-independent.
+- Sketches growing past what a host will accept inline, which would force
+  server-side storage and a `resourceLink` instead of an image block.

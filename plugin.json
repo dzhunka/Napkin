@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "napkin",
   "version": "0.1.0",
-  "description": "Boilerplate agent plugin backed by a remote MCP App: an interactive widget MCP hosts render alongside tool results.",
+  "description": "A blank napkin you can sketch on, so a rough drawing can answer a question that words are doing badly.",
   "license": "MIT",
-  "keywords": ["mcp", "mcp-apps", "widget", "boilerplate"]
+  "keywords": ["mcp", "mcp-apps", "widget", "sketch", "drawing"]
 }

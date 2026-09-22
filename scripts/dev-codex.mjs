@@ -435,7 +435,7 @@ try {
     console.log("Seeded threads, ready to continue:");
     for (const thread of seededThreads) console.log(`  ${thread.name} — ${thread.description}`);
   }
-  console.log("Ask the agent to greet you to open the widget.");
+  console.log("Ask the agent for a napkin to sketch on.");
   console.log("Close the Codex window to tear down this isolated instance.");
   console.log("");
 

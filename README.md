@@ -1,19 +1,68 @@
-# MCP App plugin boilerplate
+# Napkin
 
-A deployable starting point for an **agent plugin whose core is an MCP App** — a
-remote MCP server that ships an interactive HTML widget the host renders next to
-the tool result. One repo covers both halves:
+A blank napkin for your agent. It sketches nothing — you do.
+
+Napkin is an agent plugin whose core is an **MCP App**: a remote MCP server that
+ships an interactive widget the host renders next to the tool result. The agent
+calls one tool, a square of paper appears in the conversation, you draw on it,
+press Send, and the drawing arrives as an image in your next message.
+
+It exists because the alternative is worse. Describing a shape in words is slow
+and lossy, and the workaround — pick up a real napkin, draw on it, photograph it,
+upload the photo — works but costs a detour through your phone every time. Some
+directions are only five seconds of pen: a logo that should feel *like a mountain
+but rounder*, which panel sits where, how three boxes connect.
 
 | Layer | Where | What it is |
 | --- | --- | --- |
-| MCP App | `app/mcp/route.ts` + `widget/` | A Next.js route serving a remote MCP server, and the widget it hands the host |
+| MCP App | `app/mcp/route.ts` + `widget/` | A Next.js route serving a remote MCP server, and the napkin it hands the host |
 | Plugin package | `plugin.json`, `mcp.json`, `skills/` | [Agent Plugins 1.0.0](https://agent-plugins.org/specification) package that installs into Cursor, Codex, and Claude Code |
 
-This is a GitHub template repository — click **Use this template**, or copy the
-directory, to start a project from it. Nothing here is bound to a particular
-deployment: `mcp.json` and `.mcp.json` ship with a `replace-me.example.com`
-placeholder so a project that forgets to set its own endpoint fails loudly
-instead of silently talking to someone else's server.
+Built from [`dzhunka/mcp-app-boilerplate`](https://github.com/dzhunka/mcp-app-boilerplate).
+
+## What v1 is
+
+A pen and a Send button. No eraser, no undo, no colours, no shapes, no rulers.
+A napkin is the rough version of an idea, and the constraint is the point — to
+change a sketch, ask for a fresh napkin.
+
+## How the sketch gets back
+
+This is the part worth understanding, because the obvious design does not work.
+
+The instinct is to have the widget call a tool with the PNG and let the tool
+return it. But the result of a tool the *widget* invoked goes back to the widget,
+and no host is obliged to also put it in front of the model. A sketch the model
+never sees is useless.
+
+So the widget hands the image to the **host** instead, with `ui/message` and an
+image content block, and the host adds it to the thread as though you had
+attached the file yourself. Codex ships a localised string for exactly this —
+"Shared an image from {appName}" — so it is a designed path, not a loophole.
+
+Two consequences fall out of that, and both are good:
+
+- **The server is stateless.** The drawing never touches the deployment. There is
+  one tool, no upload route, and nothing stored, which is why this runs on
+  serverless functions without a database.
+- **The image lands in your own transcript.** You see what you sent, and the turn
+  starts on your press rather than on the model's guess about when you are done.
+
+The route is negotiated from the host's declared capabilities rather than
+assumed. A host that takes images only as model context gets the image parked
+there with a short text message as the trigger; a host that takes them nowhere
+gets a disabled Send button and an honest explanation. See
+[DECISIONS.md](./DECISIONS.md) for the host evidence behind this.
+
+## The tool
+
+`open_napkin({ brief? })` — model-visible, and the only tool. It opens the napkin
+and returns, telling the agent to stop and wait. `brief` is a short reminder
+printed above the paper, like "rough logo direction".
+
+`skills/napkin/SKILL.md` teaches agents when to reach for it, and — just as
+importantly — that after calling it they should say something brief and then wait
+rather than narrate a drawing that does not exist yet.
 
 ## How the MCP App works
 
@@ -29,27 +78,25 @@ things wire it together:
 
 The widget is **not served as a web page**. Its HTML travels as text inside the
 JSON-RPC response, and the host injects it into an iframe under the host's own
-origin. Your deployment is never navigated to — it only answers `/mcp`.
+origin. The deployment is never navigated to — it only answers `/mcp`.
 
 That is why this repo has two builds and one deployment. Next.js is the server:
-it terminates Streamable HTTP, runs your tools, and serves resources. The widget
+it terminates Streamable HTTP, runs the tool, and serves the resource. The napkin
 is a Vite app compiled into a **single self-contained HTML file**, which the MCP
-route reads off disk and returns as the resource.
+route reads off disk and returns.
 
 Inlining everything is deliberate. Host sandboxes enforce a CSP that restricts
 which origins a widget may load subresources from, and a widget that fetches
-nothing works on every host regardless of that policy. It also removes the
-failure mode where a widget renders as readable but unstyled and inert. See
-[DECISIONS.md](./DECISIONS.md) for the measurements behind this.
+nothing works on every host regardless of that policy.
 
 ```
 app/
-  mcp/route.ts          MCP server — tools + the ui:// resource
+  mcp/route.ts          MCP server — open_napkin + the ui:// resource
 widget/
   index.html            Vite entry
   main.tsx              React root
-  app.tsx               the widget UI
-  use-mcp-app.ts        the host bridge: tool input, tool result, callTool
+  app.tsx               the napkin: canvas, pen, Send
+  use-mcp-app.ts        the host bridge, including the negotiated image route
   styles.css            Tailwind
   dist/index.html       built bundle (generated, gitignored)
 vite.config.mts         single-file widget build
@@ -58,17 +105,17 @@ scripts/dev-codex.mjs   isolated Codex instance with this plugin installed
 scripts/test-client.mjs protocol smoke test
 scripts/set-endpoint.mjs writes your deployment URL into both manifests
 scripts/capture-seed-thread.mjs captures one of your threads as a seed fixture
-scripts/fixtures/         seed threads the isolated instance starts with
 ```
 
-### The two kinds of tool
+### The canvas
 
-The demo registers both, because real MCP Apps need both:
-
-- **`greet`** is model-visible. The agent calls it, and the host opens the widget.
-- **`set_tone`** is declared `visibility: ["app"]`, so it is hidden from the
-  model and exists only for the widget to call when the user clicks a button.
-  The widget invokes it through `callTool` from `useMcpApp()`.
+The pixel buffer is a fixed 1024×1024 square while CSS decides the rendered
+size. Two reasons: resizing a canvas clears it, so pinning the buffer keeps a
+layout change from wiping a drawing, and every napkin submits at the same
+resolution. The nib is deliberately bolder than a real pen at that size, because
+models downscale images before reading them and a hairline does not survive it.
+The paper is painted rather than left transparent — a transparent PNG composited
+onto a dark background hides the ink completely.
 
 ## Develop
 
@@ -89,20 +136,15 @@ No tunnel is required, because the widget requests no subresources. Because each
 run gets a fresh Codex instance, its widget cache starts empty, so you see the
 current bundle without bumping `UI_VERSION`.
 
-### Seed threads
-
-A fresh instance also starts with an empty thread list, which means retyping the
-same setup before every test. `scripts/fixtures/codex-dev-seed-thread-*` holds
-conversations that `pnpm dev` replays into the isolated instance, so they are
-waiting in the thread list, ready to continue. The one shipped here establishes
-that you are Ada and that greetings go through the app, so "greet me" opens the
-widget on the first turn.
-
-Capture your own from a thread you have already had:
+A fresh instance also starts with an empty thread list. `pnpm capture-thread`
+captures a real conversation into `scripts/fixtures/` so `pnpm dev` replays it
+into the isolated instance, waiting in the thread list and ready to continue —
+useful here, since testing Napkin means first getting to a point where a sketch
+would help:
 
 ```sh
 pnpm capture-thread --last                    # or: pnpm capture-thread <thread-id>
-pnpm capture-thread <thread-id> --name my-case --description "what it sets up"
+pnpm capture-thread <thread-id> --name logo-brief --description "what it sets up"
 ```
 
 Capturing rewrites your home directory, Codex home, and working directory into
@@ -118,35 +160,11 @@ pnpm test:client              # verifies the protocol against localhost:3000
 
 `pnpm test:client` connects as a UI-capable client and asserts the parts that are
 easy to get subtly wrong: the extension capability, the `ui://` metadata on the
-tool, the resource MIME type, that the resource is real HTML, and that the bundle
-is self-contained.
+tool, the resource MIME type, that the resource is real HTML, that the bundle is
+self-contained, and that it still carries a canvas and a PNG export.
 
-## Build your own plugin
-
-The work happens in three places:
-
-1. **`app/mcp/route.ts`** — replace `greet`/`set_tone` with your tools. Bump
-   `UI_VERSION` whenever you ship a widget change, or hosts will serve a cached
-   copy.
-2. **`widget/app.tsx`** — your widget. Read state from `useMcpApp()`.
-3. **`skills/<name>/SKILL.md`** — teach agents when to call your tools. The
-   `description` is all an agent sees before loading the file, so it has to name
-   concrete triggers.
-
-## Rename it for a new project
-
-The boilerplate name survives in five places:
-
-| File | What to change |
-| --- | --- |
-| `plugin.json` | `name`, `description` |
-| `.claude-plugin/plugin.json` | `name`, `description` |
-| `mcp.json` and `.mcp.json` | the `mcpServers` key |
-| `skills/mcp-app-boilerplate/` | directory name and the `name` frontmatter — they must match, or the skill is rejected |
-| `app/mcp/route.ts`, `widget/use-mcp-app.ts`, `package.json` | `serverInfo.name`, the widget's client name, `name` |
-
-The endpoint URL is the one thing you can't set until you've deployed, so leave
-it and run `pnpm set-endpoint` afterwards.
+Bump `UI_VERSION` in `app/mcp/route.ts` whenever you ship a widget change, or
+hosts will serve a cached copy.
 
 ## Deploy
 
@@ -157,16 +175,20 @@ pnpm set-endpoint https://your-project.vercel.app    # updates both manifests
 pnpm test:client   https://your-project.vercel.app
 ```
 
+`mcp.json` and `.mcp.json` ship with a `replace-me.example.com` placeholder, so a
+deployment that forgets `pnpm set-endpoint` fails loudly instead of silently
+talking to someone else's server.
+
 `next.config.ts` lists the widget bundle in `outputFileTracingIncludes` so the
 serverless function can read it at runtime. If you move the bundle, update that
 path too, or production will fail to serve the resource.
 
-## Install the plugin
+## Install
 
 The plugin root is the repository root, and both manifests describe the same
 package; distribute it as a git repo. Run `pnpm set-endpoint` first — installing
-while the placeholder URL is still in place gives you a plugin whose MCP server
-never connects.
+while the placeholder URL is in place gives you a plugin whose MCP server never
+connects.
 
 **Cursor** natively supports Agent Plugins. Add the repo through
 **Customize → Plugins**, which reads the root `plugin.json`.
@@ -174,8 +196,8 @@ never connects.
 **Codex** (0.147+) reads the portable root `plugin.json` and `mcp.json`:
 
 ```sh
-codex plugin marketplace add <your-org>/<your-repo>
-codex plugin add <plugin-name>@<marketplace>
+codex plugin marketplace add dzhunka/Napkin
+codex plugin add napkin@Napkin
 codex plugin list --json
 ```
 
@@ -184,14 +206,15 @@ parallel `.claude-plugin/plugin.json` and `.mcp.json` committed here. Its
 `skills/` discovery is the same directory, so the skill is shared:
 
 ```sh
-claude plugin marketplace add <your-org>/<your-repo>
+claude plugin marketplace add dzhunka/Napkin
 ```
 
 To connect only the MCP server without the plugin wrapper, any host that speaks
-Streamable HTTP can point at the endpoint directly:
+Streamable HTTP can point at the endpoint directly — though without a host that
+renders MCP Apps and accepts images from them, there is nothing to draw on:
 
 ```sh
-claude mcp add --transport http my-plugin https://your-project.vercel.app/mcp
+claude mcp add --transport http napkin https://your-project.vercel.app/mcp
 ```
 
 ## Stack
@@ -202,7 +225,3 @@ claude mcp add --transport http my-plugin https://your-project.vercel.app/mcp
   MCP SDK v2 plus the MCP Apps helpers (`registerAppTool`, `registerAppResource`)
 - Vite 8 with `vite-plugin-singlefile` and Tailwind 4 — the widget bundle
 - Next.js 16 on Vercel Fluid Compute — the MCP server
-
-Derived from [`vercel-labs/mcp-apps-nextjs-starter`](https://github.com/vercel-labs/mcp-apps-nextjs-starter),
-upgraded to the v2 MCP stack, packaged as an Agent Plugin, and moved to a
-self-contained widget bundle.
