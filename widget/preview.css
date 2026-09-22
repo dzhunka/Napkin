@@ -1,0 +1,210 @@
+/**
+ * Chrome for the dev-only host preview (`widget/preview.tsx`).
+ *
+ * Hand-written rather than Tailwind on purpose. Tailwind v4 discovers its
+ * sources by scanning the project tree, not by following imports, so utility
+ * classes written anywhere under `widget/` are compiled into the widget's
+ * stylesheet — including the production bundle. Plain prefixed class names keep
+ * the shipped `widget/dist/index.html` byte-identical.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Approximates the surfaces of a desktop chat client. Not exact, and not worth
+   making exact: it exists so widget colours are judged against a conversation
+   rather than against an empty page. */
+.np-root[data-theme="light"] {
+  --np-page: #ffffff;
+  --np-chrome: #f9f9f9;
+  --np-text: #0d0d0d;
+  --np-muted: #8f8f8f;
+  --np-bubble: #f4f4f4;
+  --np-line: #e5e5e5;
+  --np-card: #ffffff;
+  --np-field: #ffffff;
+  --np-accent: #0d0d0d;
+  --np-on-accent: #ffffff;
+}
+
+.np-root[data-theme="dark"] {
+  --np-page: #212121;
+  --np-chrome: #171717;
+  --np-text: #ececec;
+  --np-muted: #9b9b9b;
+  --np-bubble: #303030;
+  --np-line: #ffffff1f;
+  --np-card: #1a1a1a;
+  --np-field: #303030;
+  --np-accent: #ececec;
+  --np-on-accent: #0d0d0d;
+}
+
+.np-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--np-page);
+  color: var(--np-text);
+}
+
+/* --- harness controls ---------------------------------------------------- */
+
+.np-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  background: var(--np-chrome);
+  border-bottom: 1px solid var(--np-line);
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.np-bar-label {
+  color: var(--np-muted);
+}
+
+.np-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.np-chip {
+  padding: 3px 8px;
+  border: 1px solid var(--np-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--np-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.np-chip:hover {
+  color: var(--np-text);
+}
+
+.np-chip[data-active="true"] {
+  background: var(--np-accent);
+  border-color: var(--np-accent);
+  color: var(--np-on-accent);
+}
+
+.np-spacer {
+  flex: 1;
+}
+
+/* --- transcript ---------------------------------------------------------- */
+
+.np-thread {
+  flex: 1;
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 32px 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.np-user {
+  align-self: flex-end;
+  max-width: 75%;
+  padding: 10px 16px;
+  border-radius: 20px;
+  background: var(--np-bubble);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.np-assistant {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* The host renders an app inside a bordered card it owns and sizes; the widget
+   only controls what is inside the frame. */
+.np-card {
+  border: 1px solid var(--np-line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--np-card);
+  width: 100%;
+}
+
+.np-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--np-line);
+  font-size: 12px;
+  color: var(--np-muted);
+}
+
+.np-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.np-frame {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
+/* --- composer ------------------------------------------------------------ */
+
+.np-composer {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent, var(--np-page) 40%);
+  padding: 16px 24px 24px;
+}
+
+.np-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  border: 1px solid var(--np-line);
+  border-radius: 26px;
+  background: var(--np-field);
+  color: var(--np-muted);
+  font-size: 15px;
+}
+
+.np-send {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--np-accent);
+  color: var(--np-on-accent);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  flex: none;
+}

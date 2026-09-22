@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node scripts/dev-codex.mjs",
     "dev:server": "concurrently --kill-others --names widget,next \"vite build --watch\" \"next dev\"",
+    "dev:preview": "vite",
     "build:widget": "vite build",
     "build": "pnpm build:widget && next build",
     "start": "next start",
