@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="title desc">
   <title id="title">Napkin</title>
   <desc id="desc">The Napkin logo.</desc>
-  <rect width="640" height="640" rx="112" fill="#F7F3E8"/>
-  <g transform="translate(0 110)">
+  <rect width="640" height="400" rx="64" fill="#F7F3E8"/>
+  <g transform="translate(320 200) scale(1.24) translate(-310 -210)">
     <path fill="#171512" d="M116 92H504Q532 92 532 120V198C532 270 474 328 402 328H116Q88 328 88 300V120Q88 92 116 92Z"/>
     <path
       fill="none"
