@@ -1,5 +1,12 @@
 # Napkin
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/icon-dark.svg">
+    <img src="./assets/icon.svg" alt="Napkin logo" width="160">
+  </picture>
+</p>
+
 A blank napkin for your agent. It sketches nothing — you do.
 
 Napkin is an agent plugin whose core is an **MCP App**: a remote MCP server that

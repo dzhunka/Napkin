@@ -1,7 +1,11 @@
 {
   "name": "Napkin",
   "interface": {
-    "displayName": "Napkin"
+    "displayName": "Napkin",
+    "logo": "./assets/icon.svg",
+    "logoDark": "./assets/icon-dark.svg",
+    "composerIcon": "./assets/icon.svg",
+    "brandColor": "#171512"
   },
   "plugins": [
     {
