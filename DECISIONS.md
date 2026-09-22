@@ -205,3 +205,99 @@ press.
   guarantee, which would make the tool route viable and host-independent.
 - Sketches growing past what a host will accept inline, which would force
   server-side storage and a `resourceLink` instead of an image block.
+
+## 003 — Size the napkin against the host's frame, in a fixed proportion
+
+**Date:** 2026-09-22
+**Status:** Accepted
+**Measured against:** Codex desktop (`/Applications/ChatGPT.app`), Cursor 2.x,
+`@modelcontextprotocol/ext-apps` 2.0.0
+
+### Context
+
+The napkin was a square that filled the width of the host's card. In a card
+560px wide that is 560px of paper plus a Send button, and the card is taller
+than the conversation it sits in. The widget was handed a scrollbar.
+
+The instinct is to treat the widget like a page: take the width, derive the
+height from the content. That is exactly backwards here, because the host is
+not showing a page. It gives the app a column with a ceiling.
+
+### What we measured
+
+`App` with `autoResize` watches the document and reports what the content wants:
+
+```js
+// @modelcontextprotocol/ext-apps/dist/src/app.js
+K.style.height = `max-content`;
+let G = Math.ceil(K.getBoundingClientRect().height);
+let J = Math.ceil(window.innerWidth);
+if (J !== Y || G !== Z) this.sendSizeChanged({ width: J, height: G });
+```
+
+The host grants that height up to its own maximum and scrolls the rest. So a
+widget that derives height from width cannot avoid overflow — it has no term in
+the equation for how much height there is.
+
+Both hosts do say, in `hostContext.containerDimensions`:
+
+```js
+// ChatGPT.app/Contents/Resources/app.asar, minified
+containerDimensions: { maxHeight: 620, maxWidth: 568 },
+deviceCapabilities: { hover: !0, touch: !1 },
+displayMode: `inline`, platform: `desktop`,
+```
+
+```js
+// Cursor.app/Contents/Resources/app, minified
+containerDimensions: { ...t ? { width: t } : {}, maxHeight: S8h },  // S8h = 800
+platform: "desktop", userAgent: "cursor",
+```
+
+Alongside the ceiling, both report `platform` and `deviceCapabilities`, which is
+enough to know whether the napkin is being drawn on with a mouse or a finger
+without sniffing the user agent.
+
+### Decision
+
+Choose the paper's height against the frame, not against the width: the napkin
+takes the width it is offered until the ceiling minus the Send button is the
+tighter bound, at which point it narrows and centres instead of overflowing.
+
+Fix the shape at the golden ratio, landscape on a desktop and portrait on a
+handheld — unless the handheld is turned on its side, where the space itself is
+landscape. Hosts that report no frame get a napkin sized to a 560px assumption,
+under both hosts measured above, because guessing high is the failure being
+fixed. Width is read from `window.innerWidth` rather than from
+`documentElement.clientWidth`, which loses the width of a scrollbar and so
+feeds a widget's own overflow back into its layout.
+
+The backing store stays fixed per orientation, 1024 on the long edge, and
+orientation is held still once there is ink on the paper, because resizing a
+canvas clears it and a rotation must not take a drawing with it.
+
+### Consequences
+
+The napkin fits every measured host without a scrollbar, and it is the same
+shape in all of them, which is what makes it read as a napkin rather than as a
+panel that happens to be blank. Sketches now arrive at one of two known
+resolutions instead of one, both far enough from square that the model can tell
+which way up they are.
+
+We give up filling the card. On a Codex frame the napkin asks for 393 of the
+620px available, and the rest is the host's background. Filling it would mean
+letting the proportion follow the card, which is the thing we chose against.
+
+Because the shape is decided when the napkin opens, a host that changes its mind
+later — a phone rotated mid-sketch, a card resized — keeps the orientation it
+started with and only rescales.
+
+### What would reopen this
+
+- A host that reports no `containerDimensions`, where the 560px assumption
+  would be doing all the work and would be worth measuring properly.
+- Fullscreen or picture-in-picture display modes, where the frame is large
+  enough that a napkin sized to its width may look thin rather than generous.
+- Evidence that people want to keep drawing after rotating a phone, which would
+  mean reprojecting the sketch into a new buffer rather than holding the
+  orientation still.

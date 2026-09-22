@@ -146,7 +146,7 @@ body {
   border-radius: 16px;
   overflow: hidden;
   background: var(--np-card);
-  width: 100%;
+  max-width: 100%;
 }
 
 .np-card-head {
@@ -170,6 +170,14 @@ body {
   display: block;
   width: 100%;
   border: 0;
+}
+
+/* The sketch as the host posts it back into the thread. */
+.np-sketch {
+  align-self: flex-end;
+  max-width: 75%;
+  border-radius: 16px;
+  border: 1px solid var(--np-line);
 }
 
 /* --- composer ------------------------------------------------------------ */

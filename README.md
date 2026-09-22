@@ -4,7 +4,7 @@ A blank napkin for your agent. It sketches nothing — you do.
 
 Napkin is an agent plugin whose core is an **MCP App**: a remote MCP server that
 ships an interactive widget the host renders next to the tool result. The agent
-calls one tool, a square of paper appears in the conversation, you draw on it,
+calls one tool, a sheet of paper appears in the conversation, you draw on it,
 press Send, and the drawing arrives as an image in your next message.
 
 It exists because the alternative is worse. Describing a shape in words is slow
@@ -97,7 +97,9 @@ widget/
   main.tsx              React root
   app.tsx               the napkin: canvas, pen, Send
   use-mcp-app.ts        the host bridge, including the negotiated image route
+  use-napkin-size.ts    how big the paper is and which way round it lies
   styles.css            Tailwind
+  preview.tsx           dev-only mock host: a transcript, a frame, a bridge
   dist/index.html       built bundle (generated, gitignored)
 vite.config.mts         single-file widget build
 proxy.ts                CORS headers, so browser-based MCP clients can connect
@@ -109,12 +111,19 @@ scripts/capture-seed-thread.mjs captures one of your threads as a seed fixture
 
 ### The canvas
 
-The pixel buffer is a fixed 1024×1024 square while CSS decides the rendered
-size. Two reasons: resizing a canvas clears it, so pinning the buffer keeps a
-layout change from wiping a drawing, and every napkin submits at the same
-resolution. The nib is deliberately bolder than a real pen at that size, because
-models downscale images before reading them and a hairline does not survive it.
-The paper is painted rather than left transparent — a transparent PNG composited
+The paper is a golden rectangle — 1024×633 lying down, 633×1024 standing up —
+and which way round it lies comes from the host: landscape on a desktop,
+portrait on a phone unless the phone is turned on its side. Its size on screen
+is chosen against the frame the host reports rather than against the widget's
+own width, so the napkin fills the card without ever asking for more height
+than the card has. See [DECISIONS 003](./DECISIONS.md).
+
+The pixel buffer is fixed per orientation while CSS decides the rendered size.
+Two reasons: resizing a canvas clears it, so pinning the buffer keeps a layout
+change from wiping a drawing, and every napkin submits at the same resolution.
+The nib is deliberately bolder than a real pen at that size, because models
+downscale images before reading them and a hairline does not survive it. The
+paper is painted rather than left transparent — a transparent PNG composited
 onto a dark background hides the ink completely.
 
 ## Develop
@@ -150,6 +159,19 @@ pnpm capture-thread <thread-id> --name logo-brief --description "what it sets up
 Capturing rewrites your home directory, Codex home, and working directory into
 placeholders that the harness substitutes at seed time. It does not rewrite the
 conversation, so read a fixture before committing it.
+
+For widget-only work, there is a faster loop that needs no Codex at all:
+
+```sh
+pnpm dev:preview              # http://localhost:5173/preview.html
+```
+
+The preview puts the widget in a mock transcript and speaks enough of the wire
+protocol to act as its host: it answers `ui/initialize` with one of the measured
+frames, sizes the iframe from the widget's own resize notifications and clamps
+it the way a real host does, and accepts the finished sketch through
+`ui/message` and posts it into the thread. Switching frames exercises the sizing
+without a rebuild; a scrollbar appearing inside the card is a bug.
 
 For server-only work, or to check the protocol:
 

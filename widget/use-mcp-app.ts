@@ -1,5 +1,9 @@
 import { useSyncExternalStore } from "react";
-import type { App, McpUiHostCapabilities } from "@modelcontextprotocol/ext-apps";
+import type {
+  App,
+  McpUiHostCapabilities,
+  McpUiHostContext,
+} from "@modelcontextprotocol/ext-apps";
 
 // ---------------------------------------------------------------------------
 // Session-persistent singleton App instance.
@@ -42,8 +46,10 @@ let memToolInput = read<Record<string, unknown>>(STORAGE.INPUT);
 let memToolResult = read<Record<string, unknown>>(STORAGE.RESULT);
 
 // Not mirrored into sessionStorage: capabilities describe the live bridge, and a
-// stale copy would have us offer a path the current host never agreed to.
+// stale copy would have us offer a path the current host never agreed to. The
+// same goes for context, which describes a frame that may since have resized.
 let memHostCapabilities: McpUiHostCapabilities | undefined;
+let memHostContext: McpUiHostContext | undefined;
 
 const listeners = new Set<() => void>();
 function notify() {
@@ -87,6 +93,13 @@ async function ensureConnected() {
     setToolResult((result.structuredContent as Record<string, unknown>) ?? null);
   };
 
+  // The notification carries only what changed; the app merges it into its own
+  // context before calling back, so read the merged whole rather than the part.
+  app.onhostcontextchanged = () => {
+    memHostContext = app.getHostContext();
+    notify();
+  };
+
   app.onerror = (error) => {
     console.error("[mcp-app] error:", error);
   };
@@ -96,6 +109,7 @@ async function ensureConnected() {
     singletonApp = app;
     memConnected = true;
     memHostCapabilities = app.getHostCapabilities();
+    memHostContext = app.getHostContext();
     write(STORAGE.CONNECTED, true);
     notify();
   } catch (err) {
@@ -173,7 +187,8 @@ export async function sendImage(pngBase64: string, text: string): Promise<void> 
 
 /**
  * React hook exposing the MCP Apps bridge: the tool arguments the model sent,
- * the latest structured result, and a way to call back into the server.
+ * the latest structured result, what the host says it can do and how much room
+ * it has given us, and a way to call back into the server.
  */
 export function useMcpApp() {
   const connected = useSyncExternalStore(
@@ -196,6 +211,11 @@ export function useMcpApp() {
     () => memHostCapabilities,
     () => undefined,
   );
+  const hostContext = useSyncExternalStore(
+    subscribe,
+    () => memHostContext,
+    () => undefined,
+  );
 
   return {
     app: singletonApp,
@@ -204,5 +224,6 @@ export function useMcpApp() {
     toolResult,
     callTool,
     hostCapabilities,
+    hostContext,
   };
 }
