@@ -97,6 +97,8 @@ which origins a widget may load subresources from, and a widget that fetches
 nothing works on every host regardless of that policy.
 
 ```
+plugin.json             Agent Plugins manifest — name, version, description
+.codex-plugin/plugin.json  Codex's own manifest, which is where the logo goes
 app/
   mcp/route.ts          MCP server — open_napkin + the ui:// resource
 widget/
@@ -239,6 +241,14 @@ codex plugin marketplace add dzhunka/Napkin
 codex plugin add napkin@Napkin
 codex plugin list --json
 ```
+
+The Agent Plugins manifest has no field for a logo, and Codex will not take one
+from the marketplace file either, so the icon lives in `.codex-plugin/plugin.json`
+under `interface` — `logo`, `logoDark`, `composerIcon` and `brandColor`, resolved
+relative to the plugin root. Without it Codex draws a generic tile. The name,
+version and description still come from the root `plugin.json`. Skills get no
+icon of their own: a local plugin's skill interface is always empty, so the one
+in the list is Codex's own glyph.
 
 **Claude Code** does not yet parse the Agent Plugins `$schema`, so it reads the
 parallel `.claude-plugin/plugin.json` and `.mcp.json` committed here. Its

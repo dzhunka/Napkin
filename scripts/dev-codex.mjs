@@ -158,6 +158,17 @@ async function stageMarketplace(root) {
   await copyFile(path.join(repositoryRoot, "plugin.json"), path.join(pluginRoot, "plugin.json"));
   await cp(path.join(repositoryRoot, "skills"), path.join(pluginRoot, "skills"), { recursive: true });
 
+  // The Agent Plugins manifest has nowhere to put a logo, so Codex reads
+  // `.codex-plugin/plugin.json` for one and resolves its paths against the
+  // plugin root. Both have to be staged or the isolated instance shows the
+  // generic plugin tile instead of the napkin.
+  await cp(path.join(repositoryRoot, ".codex-plugin"), path.join(pluginRoot, ".codex-plugin"), {
+    recursive: true,
+  });
+  await cp(path.join(repositoryRoot, "assets"), path.join(pluginRoot, "assets"), {
+    recursive: true,
+  });
+
   // Which of the two manifests Codex reads depends on its version, so write both.
   await writeFile(
     path.join(pluginRoot, "mcp.json"),
