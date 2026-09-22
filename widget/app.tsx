@@ -108,18 +108,23 @@ export function Widget() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-zinc-100 font-sans dark:bg-zinc-950">
-      <main className="mx-auto flex w-full max-w-lg flex-col gap-4 px-6 py-8">
-        <header className="flex flex-col gap-1">
-          <h1 className="text-sm font-medium tracking-tight text-zinc-900 dark:text-zinc-100">
-            Napkin
-          </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            {brief ?? "Sketch something rough, then send it."}
-          </p>
-        </header>
+  // Only the conditions that stop a sketch being sent are worth saying out
+  // loud; "ready to send" and "draw to begin" are things the napkin itself
+  // already communicates.
+  const notice =
+    error ??
+    (!connected
+      ? "Open this through an MCP host to send a sketch."
+      : route === null
+        ? "This host does not accept images from apps."
+        : null);
 
+  // The host renders the app in a card it titles and sizes, so the widget adds
+  // no frame of its own — no page background, no heading, no margins. The
+  // napkin runs edge to edge and everything else sits on it.
+  return (
+    <div className="font-sans">
+      <div className="relative">
         <canvas
           ref={canvasRef}
           width={NAPKIN_SIZE}
@@ -130,36 +135,46 @@ export function Widget() {
           onPointerCancel={onPointerUp}
           // `touch-none` keeps a finger or pencil stroke from scrolling the host
           // instead of drawing.
-          className="aspect-square w-full touch-none rounded-sm bg-[#fafaf9] shadow-sm ring-1 ring-zinc-900/10 dark:ring-white/10"
+          className="block aspect-square w-full touch-none bg-[#fafaf9]"
           style={{ cursor: status === "drawing" ? "crosshair" : "default" }}
         />
 
-        <footer className="flex items-center justify-between gap-4">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            {status === "sent"
-              ? "Sent to the conversation."
-              : !connected
-                ? "Open this through an MCP host to send a sketch."
-                : route === null
-                  ? "This host does not accept images from apps."
-                  : hasInk
-                    ? "Ready to send."
-                    : "Draw on the napkin to begin."}
-          </p>
+        {/* The model's brief is written on the napkin instead of above it, and
+            fades on the first stroke so it never competes with the drawing.
+            It is DOM, not paint, so it never reaches the sent PNG. */}
+        <p
+          aria-hidden={hasInk}
+          className={`pointer-events-none absolute inset-0 flex select-none items-center justify-center px-10 text-center text-sm text-zinc-400 transition-opacity duration-300 ${
+            hasInk ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          {brief ?? "Sketch something rough, then send it."}
+        </p>
 
-          <button
-            onClick={onSubmit}
-            disabled={!canSubmit}
-            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        {notice && status !== "sent" && (
+          <p
+            className={`absolute bottom-3 left-3 max-w-[70%] rounded-full bg-white/90 px-2.5 py-1 text-xs ring-1 ring-zinc-900/10 ${
+              error ? "text-red-600" : "text-zinc-500"
+            }`}
           >
-            {status === "sending" ? "Sending…" : status === "sent" ? "Sent" : "Send"}
-          </button>
-        </footer>
-
-        {error && (
-          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+            {notice}
+          </p>
         )}
-      </main>
+
+      </div>
+
+      {/* Full width and flush against the paper so the two read as one object.
+          A floating button on the napkin would have landed a few pixels above
+          the host's own send button, in the same corner, with the same arrow.
+          This sits below the paper on the host's surface, so unlike anything
+          drawn on the napkin it follows the host's theme. */}
+      <button
+        onClick={onSubmit}
+        disabled={!canSubmit}
+        className="block w-full bg-zinc-900 py-3 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+      >
+        {status === "sending" ? "Sending…" : status === "sent" ? "Sent" : "Send"}
+      </button>
     </div>
   );
 }
