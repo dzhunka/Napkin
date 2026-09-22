@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "mcp-app-boilerplate": {
+    "napkin": {
       "type": "http",
       "url": "https://replace-me.example.com/mcp"
     }

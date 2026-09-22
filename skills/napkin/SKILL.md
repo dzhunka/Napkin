@@ -1,5 +1,5 @@
 ---
-name: mcp-app-boilerplate
+name: napkin
 description: Greets a person and opens an interactive greeting widget in the host UI. Use when the user asks to greet someone by name, or asks to change the tone of a greeting. Replace this skill with guidance for your own MCP App's tools.
 license: MIT
 ---
@@ -7,7 +7,7 @@ license: MIT
 # MCP App boilerplate
 
 This skill tells the agent when to reach for the tools exposed by the
-`mcp-app-boilerplate` MCP server, and how to talk about the widget the host
+`napkin` MCP server, and how to talk about the widget the host
 renders.
 
 ## Tools

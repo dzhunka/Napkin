@@ -1,5 +1,5 @@
 {
-  "name": "mcp-app-boilerplate",
+  "name": "napkin",
   "version": "0.1.0",
   "description": "Boilerplate agent plugin backed by a remote MCP App: an interactive widget MCP hosts render alongside tool results.",
   "license": "MIT",

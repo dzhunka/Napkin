@@ -108,7 +108,7 @@ const handler = createMcpHandler(
     );
   },
   {
-    serverInfo: { name: "mcp-app-boilerplate", version: "0.1.0" },
+    serverInfo: { name: "napkin", version: "0.1.0" },
     // Advertise the MCP Apps extension so UI-capable hosts negotiate it.
     capabilities: { extensions: { [EXTENSION_ID]: {} } },
   },
