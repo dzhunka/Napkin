@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mcp-app-boilerplate": {
+      "type": "http",
+      "url": "https://replace-me.example.com/mcp"
+    }
+  }
+}
