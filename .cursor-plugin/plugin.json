@@ -1,0 +1,8 @@
+{
+  "name": "napkin",
+  "displayName": "Napkin",
+  "version": "0.1.0",
+  "description": "A blank napkin you can sketch on, so a rough drawing can answer a question that words are doing badly.",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

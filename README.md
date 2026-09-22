@@ -190,10 +190,14 @@ package; distribute it as a git repo. Run `pnpm set-endpoint` first — installi
 while the placeholder URL is in place gives you a plugin whose MCP server never
 connects.
 
-**Cursor** natively supports Agent Plugins. Add the repo through
-**Customize → Plugins**, which reads the root `plugin.json`.
+**Cursor** indexes a git repository as a marketplace. Add
+`https://github.com/dzhunka/Napkin.git` through **Customize → Plugins**, then
+install Napkin from it. Cursor reads `.cursor-plugin/plugin.json`, which points
+at the same `skills/` and `.mcp.json` as the other hosts.
 
-**Codex** (0.147+) reads the portable root `plugin.json` and `mcp.json`:
+**Codex** (0.147+) reads the portable root `plugin.json` and `mcp.json`.
+`.agents/plugins/marketplace.json` is what lets the repo be added as a
+marketplace containing exactly one plugin — itself:
 
 ```sh
 codex plugin marketplace add dzhunka/Napkin
