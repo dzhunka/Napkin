@@ -72,7 +72,7 @@ export default function Terms() {
         <p>
           Updated terms will be published on this page with a new date.
           Questions go to{" "}
-          <a href="https://github.com/Enkind/napkin/issues">
+          <a href="https://github.com/enkind/napkin/issues">
             the public issue tracker
           </a>
           .

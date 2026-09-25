@@ -9,7 +9,7 @@
 
 A blank napkin for your agent. It sketches nothing — you do.
 
-[Website](https://napkin-neon.vercel.app) · [Privacy](https://napkin-neon.vercel.app/privacy) · [Terms](https://napkin-neon.vercel.app/terms) · [Issues](https://github.com/Enkind/napkin/issues)
+[Website](https://napkin-neon.vercel.app) · [Privacy](https://napkin-neon.vercel.app/privacy) · [Terms](https://napkin-neon.vercel.app/terms) · [Issues](https://github.com/enkind/napkin/issues)
 
 Napkin is a small, free agent plugin whose core is an **MCP App**: a remote MCP
 server that ships an interactive widget the host renders next to the tool
@@ -31,7 +31,7 @@ noncommercial project. MIT licensed.
 Paste this into Codex, Cursor, or Claude Code, then start a new chat:
 
 ```text
-Install the Napkin plugin from https://github.com/Enkind/napkin
+Install the Napkin plugin from https://github.com/enkind/napkin
 ```
 
 Or do what the agent would do. The repository is a marketplace containing one
@@ -39,15 +39,15 @@ plugin, `plugins/napkin`, for each host:
 
 ```sh
 # Codex
-codex plugin marketplace add Enkind/napkin
+codex plugin marketplace add enkind/napkin
 codex plugin add napkin@napkin
 
 # Claude Code
-claude plugin marketplace add Enkind/napkin
+claude plugin marketplace add enkind/napkin
 claude plugin install napkin@napkin
 ```
 
-In **Cursor**, add `https://github.com/Enkind/napkin.git` as a marketplace
+In **Cursor**, add `https://github.com/enkind/napkin.git` as a marketplace
 through **Customize → Plugins** and install Napkin from it.
 
 There is no account and no key. Every host connects to the same Streamable HTTP

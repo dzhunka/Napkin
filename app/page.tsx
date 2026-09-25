@@ -5,7 +5,7 @@ import { Mark } from "./mark";
 import "./styles.css";
 
 const INSTALL_PROMPT =
-  "Install the Napkin plugin from https://github.com/Enkind/napkin";
+  "Install the Napkin plugin from https://github.com/enkind/napkin";
 
 export default function Home() {
   return (
@@ -18,7 +18,7 @@ export default function Home() {
           </Link>
           <span className="pill">Early preview</span>
           <span className="spacer" />
-          <a href="https://github.com/Enkind/napkin">GitHub</a>
+          <a href="https://github.com/enkind/napkin">GitHub</a>
           <a className="action" href="#install">
             Add to your agent
           </a>
@@ -197,7 +197,7 @@ export default function Home() {
       <footer>
         <div className="inner">
           <p className="site-links">
-            <a href="https://github.com/Enkind/napkin">GitHub</a>
+            <a href="https://github.com/enkind/napkin">GitHub</a>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>
             <Link href="/support">Support</Link>

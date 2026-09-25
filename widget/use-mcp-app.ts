@@ -78,7 +78,7 @@ async function ensureConnected() {
   const { App } = await import("@modelcontextprotocol/ext-apps");
 
   const app = new App(
-    { name: "napkin-widget", version: "0.3.1" },
+    { name: "napkin-widget", version: "0.3.2" },
     {},
     { autoResize: true },
   );
