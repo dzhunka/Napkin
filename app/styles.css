@@ -785,6 +785,11 @@ h3 {
   font-size: 0.8125rem;
 }
 
+.menu .skill .state {
+  margin-left: 0;
+  font-size: inherit;
+}
+
 .menu svg {
   width: 16px;
   height: 16px;

@@ -1,5 +1,5 @@
 interface:
-  display_name: "Napkin"
+  display_name: "Napkin: Sketch"
   short_description: "Sketch it instead of describing it"
   icon_small: "./assets/napkin.svg"
   icon_large: "./assets/napkin.svg"

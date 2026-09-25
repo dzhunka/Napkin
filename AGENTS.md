@@ -18,7 +18,7 @@ Keep the code minimal, direct, and straightforward.
 
 ## Agent-facing text
 
-The tool description in `app/mcp/route.ts`, the tool result text, and `plugins/napkin/skills/napkin/SKILL.md` are agent instruction rather than internal documentation. Describe what the napkin is and does, and when it helps; do not script the conversation around it.
+The tool description in `app/mcp/route.ts`, the tool result text, and `plugins/napkin/skills/sketch/SKILL.md` are agent instruction rather than internal documentation. Describe what the napkin is and does, and when it helps; do not script the conversation around it.
 
 ## Website
 

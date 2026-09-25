@@ -1,6 +1,6 @@
 ---
-name: napkin
-description: Opens a blank napkin the user can sketch on, and their drawing comes back as an image. Use when the user is describing something visual and struggling to put it into words — a logo direction, a layout, a shape, how pieces are arranged on screen — or when they offer to draw it, say it would be easier to show you, or mention sketching, drawing, or a diagram.
+name: sketch
+description: Opens a blank napkin the user can sketch on, and their drawing comes back as an image. Always use when the user selects this skill or invokes /sketch. Also use when the user is describing something visual and struggling to put it into words — a logo direction, a layout, a shape, how pieces are arranged on screen — or when they offer to draw it, say it would be easier to show you, or mention sketching, drawing, or a diagram.
 license: MIT
 ---
 
@@ -36,7 +36,11 @@ while a napkin is already open and unsent.
 
 ## When to offer it
 
-Reach for it when words are doing badly:
+When the user invokes `/sketch`, they have already decided to draw. Open the
+napkin right away, taking the `brief` from the conversation, rather than asking
+what they want to sketch.
+
+Otherwise, reach for it when words are doing badly:
 
 - The user is circling a visual idea — "something like a mountain but rounder".
 - The answer is spatial: a layout, an arrangement, a flow between boxes.

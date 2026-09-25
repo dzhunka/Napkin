@@ -389,3 +389,40 @@ install made as `napkin@Napkin` needs reinstalling from the new name.
   host-specific one.
 - Plugin payloads that need build output, which would make `plugins/napkin` a
   package with its own `dist/`, as Better Response's is.
+
+## 005 — Name the skill `sketch`, so the direct trigger is `/sketch`
+
+**Date:** 2026-09-25
+**Status:** Accepted
+**Measured against:** Better Response `0.44.1`–`0.44.2` in Codex desktop; Napkin's own picker entry not yet measured
+
+### Context
+
+Hosts list a plugin's skills in their `/` picker under the skill's name, so the
+skill named `napkin` was invoked as `/napkin`. Napkin is more often asked for
+than reached for: by the time the user wants to draw, they have usually decided
+so themselves, which makes the direct trigger the main path rather than a
+shortcut.
+
+Better Response names its skill for the act, `visualize`, and Codex lists it as
+"Better Response: Visualize". Its 0.44.1 and 0.44.2 releases showed that Codex
+shows `display_name` from the skill's `agents/openai.yaml` verbatim, and adds the
+plugin prefix only when that metadata is absent.
+
+### Decision
+
+The skill is named `sketch`, and the trigger is `/sketch`. Its `openai.yaml` sets
+`display_name: "Napkin: Sketch"` explicitly, so the picker shows the plugin
+beside a verb as generic as "sketch". The skill's description states that an
+invocation always applies, and the skill opens the napkin straight away instead
+of asking what the user wants to draw.
+
+### Consequences
+
+`/napkin` no longer exists. Renaming the skill changes the installed contract,
+so it ships as `0.4.0`. The site's install step teaches `/sketch`.
+
+### What would reopen this
+
+- A host whose picker shows `/sketch` bare in a way that collides with another
+  skill, and cannot be disambiguated by metadata.

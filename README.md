@@ -130,10 +130,10 @@ gets a disabled Send button and an honest explanation. See
 and returns, telling the agent to stop and wait. `brief` is a short reminder
 printed on the paper, like "rough logo direction".
 
-`plugins/napkin/skills/napkin/SKILL.md` teaches agents when to reach for it, and
+`plugins/napkin/skills/sketch/SKILL.md` teaches agents when to reach for it, and
 — just as importantly — that after calling it they should say something brief
 and then wait rather than narrate a drawing that does not exist yet. Users can
-also ask for it directly with `/napkin`.
+also ask for it directly with `/sketch`, listed as Napkin: Sketch.
 
 ## How the MCP App works
 

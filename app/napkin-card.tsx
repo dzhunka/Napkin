@@ -47,7 +47,7 @@ export function NapkinCard({
             id: message.id,
             result: {
               protocolVersion: "2026-01-26",
-              hostInfo: { name: "napkin-site", version: "0.3.2" },
+              hostInfo: { name: "napkin-site", version: "0.4.0" },
               hostCapabilities: { message: { text: {}, image: {} } },
               hostContext: {
                 displayMode: "inline",

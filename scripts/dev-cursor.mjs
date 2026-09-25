@@ -24,14 +24,14 @@ import {
 
 const cursorExecutable = "/Applications/Cursor.app/Contents/MacOS/Cursor";
 const pluginSource = path.join(repositoryRoot, "plugins", "napkin");
-const sourceSkill = path.join(pluginSource, "skills", "napkin", "SKILL.md");
+const sourceSkill = path.join(pluginSource, "skills", "sketch", "SKILL.md");
 const port = 3100;
 const mcpEndpoint = `http://127.0.0.1:${port}/mcp`;
 const isolatedRoot = path.join(homedir(), ".napkin", "cursor-dev");
 const isolatedUserData = path.join(isolatedRoot, "user-data");
 const isolatedExtensions = path.join(isolatedRoot, "extensions");
 const cachedPlugin = path.join(homedir(), ".cursor", "plugins", "local", "napkin");
-const cachedSkill = path.join(cachedPlugin, "skills", "napkin", "SKILL.md");
+const cachedSkill = path.join(cachedPlugin, "skills", "sketch", "SKILL.md");
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {

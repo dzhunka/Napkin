@@ -111,7 +111,9 @@ export default function Home() {
                 <div className="menu">
                   <span className="on">
                     <Mark className="solid" />
-                    Napkin
+                    <span className="skill">
+                      <span className="state">Napkin:</span> Sketch
+                    </span>
                   </span>
                 </div>
                 <div className="composer">
@@ -120,7 +122,7 @@ export default function Home() {
                       <path d="M10 4.5v11M4.5 10h11" />
                     </svg>
                   </span>
-                  <span className="ask typed">/napkin</span>
+                  <span className="ask typed">/sketch</span>
                   <span className="round send">
                     <svg viewBox="0 0 20 20">
                       <path d="M10 15.5V5M5.5 9.5L10 5l4.5 4.5" />
@@ -131,7 +133,7 @@ export default function Home() {
               <h3>Ask for a napkin</h3>
               <p>
                 Say it would be easier to draw, or type{" "}
-                <code className="mono">/napkin</code>. Your agent opens a blank
+                <code className="mono">/sketch</code>. Your agent opens a blank
                 napkin in the thread and waits.
               </p>
             </li>
