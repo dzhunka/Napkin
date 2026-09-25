@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "napkin": {
+      "type": "http",
+      "url": "https://napkin-neon.vercel.app/mcp"
+    }
+  }
+}

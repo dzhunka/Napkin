@@ -12,9 +12,15 @@ import { access, chmod, copyFile, cp, mkdir, mkdtemp, readFile, readdir, realpat
 import { execFileSync, spawn } from "node:child_process";
 import { homedir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import {
+  repositoryRoot,
+  startDevServer,
+  stopDevServer,
+  stopLeftoverDevServer,
+  waitForEndpoint,
+} from "./dev-web.mjs";
 
-const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const pluginSource = path.join(repositoryRoot, "plugins", "napkin");
 const codexCli = "/Applications/ChatGPT.app/Contents/Resources/codex";
 const chatGptExecutable = "/Applications/ChatGPT.app/Contents/MacOS/ChatGPT";
 const sourceCodexHome = process.env.CODEX_HOME?.trim() || path.join(homedir(), ".codex");
@@ -27,7 +33,7 @@ const mcpEndpoint = `${localOrigin}/mcp`;
 // `--install-only` verifies staging and installation without launching the GUI.
 const installOnly = process.argv.includes("--install-only");
 
-const manifest = JSON.parse(await readFile(path.join(repositoryRoot, "plugin.json"), "utf8"));
+const manifest = JSON.parse(await readFile(path.join(pluginSource, ".codex-plugin", "plugin.json"), "utf8"));
 const pluginName = manifest.name;
 const marketplaceName = `${pluginName}-local`;
 
@@ -48,139 +54,17 @@ function run(command, args, options = {}) {
   });
 }
 
-function pidAlive(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function collectProcessTree(pid, seen = new Set()) {
-  if (!Number.isInteger(pid) || pid <= 0 || seen.has(pid)) return [];
-  seen.add(pid);
-  let children = [];
-  try {
-    children = execFileSync("pgrep", ["-P", String(pid)], { encoding: "utf8" })
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .map(Number)
-      .filter((child) => Number.isInteger(child) && child > 0);
-  } catch {
-    // no children
-  }
-  const tree = children.flatMap((child) => collectProcessTree(child, seen));
-  tree.push(pid);
-  return tree;
-}
-
-async function stopProcessTree(pid) {
-  if (!pidAlive(pid)) return;
-  const tree = collectProcessTree(pid);
-  for (const member of tree) {
-    try {
-      process.kill(member, "SIGTERM");
-    } catch {
-      // already exited
-    }
-  }
-  const deadline = Date.now() + 3_000;
-  while (Date.now() < deadline && tree.some(pidAlive)) {
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-  for (const member of collectProcessTree(pid)) {
-    if (!pidAlive(member)) continue;
-    try {
-      process.kill(member, "SIGKILL");
-    } catch {
-      // already exited
-    }
-  }
-}
-
 /**
- * A `next dev` worker outlives a killed parent and then holds the port, so the
- * next run silently starts on a different one. `.next/dev/lock` records it.
- */
-async function stopLeftoverDevServer() {
-  let lock;
-  try {
-    lock = JSON.parse(await readFile(path.join(repositoryRoot, ".next", "dev", "lock"), "utf8"));
-  } catch {
-    return;
-  }
-  const pid = Number(lock.pid);
-  if (!pidAlive(pid)) return;
-  let command = "";
-  try {
-    command = execFileSync("ps", ["-p", String(pid), "-o", "command="], { encoding: "utf8" }).trim();
-  } catch {
-    return;
-  }
-  if (!/\bnext-server\b/.test(command) && !/\bnext\s+dev\b/.test(command)) return;
-  console.log(`Stopping leftover Next.js dev server (pid ${pid}).`);
-  await stopProcessTree(pid);
-}
-
-/** Any HTTP response means the server is listening — `GET /mcp` answers 405. */
-async function waitForEndpoint(url, child) {
-  const deadline = Date.now() + 60_000;
-  while (Date.now() < deadline) {
-    if (child.exitCode !== null) {
-      throw new Error(`The dev server exited with code ${child.exitCode}.`);
-    }
-    try {
-      await fetch(url);
-      return;
-    } catch {
-      // still starting
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  throw new Error(`Timed out waiting for ${url}.`);
-}
-
-/**
- * Codex installs a plugin by copying its source directory, so the source has to
- * be the ~20K plugin payload rather than this 600M+ repository. Stage a
- * marketplace holding just the plugin files, with the endpoint already
- * rewritten to the dev server.
+ * Codex installs a plugin by copying its source directory. Stage a marketplace
+ * holding a copy of `plugins/napkin`, with the endpoint rewritten to the dev
+ * server, so the repository's own manifests keep pointing at production.
  */
 async function stageMarketplace(root) {
   const marketplaceRoot = path.join(root, "marketplace");
   const pluginRoot = path.join(marketplaceRoot, "plugin");
   await mkdir(path.join(marketplaceRoot, ".agents", "plugins"), { recursive: true });
-  await mkdir(pluginRoot, { recursive: true });
+  await cp(pluginSource, pluginRoot, { recursive: true });
 
-  await copyFile(path.join(repositoryRoot, "plugin.json"), path.join(pluginRoot, "plugin.json"));
-  await cp(path.join(repositoryRoot, "skills"), path.join(pluginRoot, "skills"), { recursive: true });
-
-  // The Agent Plugins manifest has nowhere to put a logo, so Codex reads
-  // `.codex-plugin/plugin.json` for one and resolves its paths against the
-  // plugin root. Both have to be staged or the isolated instance shows the
-  // generic plugin tile instead of the napkin.
-  await cp(path.join(repositoryRoot, ".codex-plugin"), path.join(pluginRoot, ".codex-plugin"), {
-    recursive: true,
-  });
-  await cp(path.join(repositoryRoot, "assets"), path.join(pluginRoot, "assets"), {
-    recursive: true,
-  });
-
-  // Which of the two manifests Codex reads depends on its version, so write both.
-  await writeFile(
-    path.join(pluginRoot, "mcp.json"),
-    `${JSON.stringify(
-      {
-        $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
-        mcpServers: { [pluginName]: { type: "streamable-http", url: mcpEndpoint } },
-      },
-      null,
-      2,
-    )}\n`,
-  );
   await writeFile(
     path.join(pluginRoot, ".mcp.json"),
     `${JSON.stringify({ mcpServers: { [pluginName]: { type: "http", url: mcpEndpoint } } }, null, 2)}\n`,
@@ -404,38 +288,15 @@ try {
     console.log("");
     console.log("Cached plugin contents:");
     for (const entry of await readdir(cachedPlugin)) console.log(`  ${entry}`);
-    for (const name of ["mcp.json", ".mcp.json"]) {
-      try {
-        console.log(`${name}: ${(await readFile(path.join(cachedPlugin, name), "utf8")).trim()}`);
-      } catch {
-        console.log(`${name}: absent`);
-      }
-    }
+    console.log(`.mcp.json: ${(await readFile(path.join(cachedPlugin, ".mcp.json"), "utf8")).trim()}`);
     console.log(`Seeded threads: ${seededThreads.map((thread) => thread.name).join(", ") || "none"}`);
     await rm(isolatedRoot, { recursive: true, force: true });
     console.log("\nInstall verified. Removed the isolated Codex environment.");
     process.exit(0);
   }
 
-  // Rebuilt on change by `vite build --watch`; the MCP route reads it per
-  // request, so widget edits need only a fresh thread, not a restart.
   console.log(`Starting the widget watcher and dev server at ${localOrigin}...`);
-  devServer = spawn(
-    "npx",
-    [
-      "concurrently",
-      "--kill-others",
-      "--names",
-      "widget,next",
-      "vite build --watch",
-      `next dev --port ${port}`,
-    ],
-    {
-      cwd: repositoryRoot,
-      env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" },
-      stdio: "inherit",
-    },
-  );
+  devServer = startDevServer(port);
   await waitForEndpoint(`${localOrigin}/mcp`, devServer);
 
   console.log("");
@@ -459,13 +320,11 @@ try {
     },
   });
 
-  if (devServer?.pid) await stopProcessTree(devServer.pid);
-  await stopLeftoverDevServer();
+  await stopDevServer(devServer);
   await rm(isolatedRoot, { recursive: true, force: true });
   console.log("Removed the isolated Codex environment.");
 } catch (error) {
-  if (devServer?.pid) await stopProcessTree(devServer.pid);
-  await stopLeftoverDevServer();
+  await stopDevServer(devServer);
   if (appLaunchStarted) {
     console.error(`Preserved isolated state at ${isolatedRoot}`);
   } else {

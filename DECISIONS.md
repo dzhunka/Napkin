@@ -343,3 +343,49 @@ and it cannot shrink itself, which are the two failures worth preventing.
 The preview harness now reports its container the way Codex does: the height it
 just granted, not the ceiling it would allow. Reporting the ceiling made the
 harness a kinder host than any that exists, and it is why this shipped.
+
+## 004 — Install from `plugins/napkin`, not the repository root
+
+**Date:** 2026-09-25
+**Status:** Accepted
+**Measured against:** Codex desktop CLI (`/Applications/ChatGPT.app/Contents/Resources/codex`)
+
+### Context
+
+The repository root was the plugin. A portable Agent Plugins `plugin.json` and
+`mcp.json` sat beside Next.js, with a parallel `.codex-plugin/`, `.cursor-plugin/`
+and `.claude-plugin/` manifest each describing the same root.
+
+Codex installs a plugin by copying its source directory. With the root as the
+source, that is the whole repository — the website, the widget source, and
+anything else checked in — which is why the dev launcher already had to stage a
+separate copy of just the plugin files before it could install one.
+
+Better Response, built on the same recipe, keeps everything a host installs in
+one directory and puts only marketplace catalogs at the root.
+
+### Decision
+
+Everything a host installs lives in `plugins/napkin/`: the skill, one manifest
+per host, the logo, and `.mcp.json`. The root holds one marketplace catalog per
+host, each listing that directory. The portable Agent Plugins manifests are
+removed rather than kept in step, because no host we install into needs them
+once each has its own manifest.
+
+### Consequences
+
+Adding the repository as a Codex marketplace and installing `napkin@napkin`
+caches exactly the plugin directory — seven entries, the same payload the dev
+launcher stages — and the launcher now copies that directory instead of
+assembling one. The Cursor manifest carries its own MCP URL, so the URL lives in
+two files and `pnpm set-endpoint` writes both.
+
+The marketplace name changes from `Napkin` to `napkin`, so an existing Codex
+install made as `napkin@Napkin` needs reinstalling from the new name.
+
+### What would reopen this
+
+- A host that installs from the Agent Plugins manifest alone and cannot read a
+  host-specific one.
+- Plugin payloads that need build output, which would make `plugins/napkin` a
+  package with its own `dist/`, as Better Response's is.

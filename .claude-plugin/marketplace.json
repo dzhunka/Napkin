@@ -1,0 +1,13 @@
+{
+  "name": "napkin",
+  "owner": {
+    "name": "dzhunka"
+  },
+  "plugins": [
+    {
+      "name": "napkin",
+      "source": "./plugins/napkin",
+      "description": "A blank napkin you can sketch on, so a rough drawing can answer a question that words are doing badly."
+    }
+  ]
+}

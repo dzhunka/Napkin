@@ -1,7 +1,0 @@
-{
-  "name": "napkin",
-  "version": "0.2.0",
-  "description": "A blank napkin you can sketch on, so a rough drawing can answer a question that words are doing badly.",
-  "license": "MIT",
-  "keywords": ["mcp", "mcp-apps", "widget", "sketch", "drawing"]
-}

@@ -1,9 +1,14 @@
 {
   "name": "napkin",
   "displayName": "Napkin",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A blank napkin you can sketch on, so a rough drawing can answer a question that words are doing badly.",
-  "logo": "assets/icon.svg",
+  "logo": "./napkin.svg",
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json"
+  "mcpServers": {
+    "napkin": {
+      "type": "http",
+      "url": "https://napkin-neon.vercel.app/mcp"
+    }
+  }
 }

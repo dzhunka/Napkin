@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="title desc">
+  <title id="title">Napkin icon</title>
+  <desc id="desc">The Napkin logo on a near-black tile.</desc>
+  <rect width="640" height="400" rx="64" fill="#171512"/>
+  <g transform="translate(320 200) scale(1.24) translate(-310 -210)">
+    <path
+      fill="#F7F3E8"
+      d="M116 92
+         H504
+         Q532 92 532 120
+         V198
+         C532 270 474 328 402 328
+         H116
+         Q88 328 88 300
+         V120
+         Q88 92 116 92Z"/>
+    <path
+      fill="none"
+      stroke="#171512"
+      stroke-width="18"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      d="M132 244
+         C160 254 192 254 220 244
+         C200 228 196 204 207 182
+         C220 156 252 145 277 155
+         C302 165 310 190 298 213
+         C285 237 257 247 220 244
+         C248 268 307 268 336 244
+         C318 228 318 205 331 187
+         C346 165 376 161 396 176
+         C417 192 413 217 395 233
+         C379 247 358 248 336 244
+         C360 264 399 258 430 238
+         C463 216 486 184 505 146"/>
+  </g>
+</svg>

@@ -12,7 +12,7 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 // Hosts cache UI resources by URI. Bump this whenever you ship a widget change.
-const UI_VERSION = "4";
+const UI_VERSION = "5";
 const RESOURCE_URI = `ui://napkin/index.html?v=${UI_VERSION}`;
 
 // ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ const handler = createMcpHandler(
     );
   },
   {
-    serverInfo: { name: "napkin", version: "0.2.0" },
+    serverInfo: { name: "napkin", version: "0.3.0" },
     // Advertise the MCP Apps extension so UI-capable hosts negotiate it.
     capabilities: { extensions: { [EXTENSION_ID]: {} } },
   },

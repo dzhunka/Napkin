@@ -1,0 +1,9 @@
+{
+  "name": "napkin",
+  "plugins": [
+    {
+      "name": "napkin",
+      "source": "plugins/napkin"
+    }
+  ]
+}
