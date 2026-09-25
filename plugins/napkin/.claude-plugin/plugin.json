@@ -1,12 +1,12 @@
 {
   "name": "napkin",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A blank napkin you can sketch on, so a rough drawing can answer a question that words are doing badly.",
   "author": {
     "name": "dzhunka"
   },
   "homepage": "https://napkin-neon.vercel.app",
-  "repository": "https://github.com/dzhunka/Napkin",
+  "repository": "https://github.com/Enkind/napkin",
   "license": "MIT",
   "keywords": ["mcp", "mcp-apps", "sketch", "drawing"]
 }

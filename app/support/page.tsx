@@ -20,8 +20,8 @@ export default function Support() {
           tracker:
         </p>
         <p>
-          <a href="https://github.com/dzhunka/Napkin/issues">
-            github.com/dzhunka/Napkin/issues
+          <a href="https://github.com/Enkind/napkin/issues">
+            github.com/Enkind/napkin/issues
           </a>
         </p>
         <p>

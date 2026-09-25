@@ -9,7 +9,7 @@
 
 A blank napkin for your agent. It sketches nothing — you do.
 
-[Website](https://napkin-neon.vercel.app) · [Privacy](https://napkin-neon.vercel.app/privacy) · [Terms](https://napkin-neon.vercel.app/terms) · [Issues](https://github.com/dzhunka/Napkin/issues)
+[Website](https://napkin-neon.vercel.app) · [Privacy](https://napkin-neon.vercel.app/privacy) · [Terms](https://napkin-neon.vercel.app/terms) · [Issues](https://github.com/Enkind/napkin/issues)
 
 Napkin is a small, free agent plugin whose core is an **MCP App**: a remote MCP
 server that ships an interactive widget the host renders next to the tool
@@ -31,7 +31,7 @@ noncommercial project. MIT licensed.
 Paste this into Codex, Cursor, or Claude Code, then start a new chat:
 
 ```text
-Install the Napkin plugin from https://github.com/dzhunka/Napkin
+Install the Napkin plugin from https://github.com/Enkind/napkin
 ```
 
 Or do what the agent would do. The repository is a marketplace containing one
@@ -39,15 +39,15 @@ plugin, `plugins/napkin`, for each host:
 
 ```sh
 # Codex
-codex plugin marketplace add dzhunka/Napkin
+codex plugin marketplace add Enkind/napkin
 codex plugin add napkin@napkin
 
 # Claude Code
-claude plugin marketplace add dzhunka/Napkin
+claude plugin marketplace add Enkind/napkin
 claude plugin install napkin@napkin
 ```
 
-In **Cursor**, add `https://github.com/dzhunka/Napkin.git` as a marketplace
+In **Cursor**, add `https://github.com/Enkind/napkin.git` as a marketplace
 through **Customize → Plugins** and install Napkin from it.
 
 There is no account and no key. Every host connects to the same Streamable HTTP
@@ -302,8 +302,16 @@ scrollbar appearing inside the card is a bug.
 
 ## Deploy
 
-The Vercel project deploys `main` from GitHub. To deploy by hand, or to a
-project of your own:
+Every push to `main` deploys to production through
+`.github/workflows/deploy.yml`. Vercel's own Git integration cannot deploy an
+organization repository on a Hobby team, so it is disconnected and the workflow
+builds with the project's settings (`vercel pull`, `vercel build`) and uploads
+the prebuilt output, then runs the protocol smoke test against production. It
+needs three repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and
+`VERCEL_PROJECT_ID`. Run it again from the Actions tab with **Run workflow**.
+
+Pull requests get no preview deployments. To deploy by hand, or to a project of
+your own:
 
 ```sh
 pnpm build

@@ -80,7 +80,7 @@ export default function Privacy() {
         <p>
           Material changes to this policy will be published on this page with a
           new date. Questions go to{" "}
-          <a href="https://github.com/dzhunka/Napkin/issues">
+          <a href="https://github.com/Enkind/napkin/issues">
             the public issue tracker
           </a>
           .
